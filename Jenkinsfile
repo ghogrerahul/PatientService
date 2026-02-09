@@ -1,26 +1,48 @@
 pipeline {
+
   agent any
   environment {
     NODE_ENV = 'production'
-    IMAGE_NAME = 'patient-service'
+    AWS_REGION = 'us-east-1'
+    ECR_SNAPSHOT = '147997138755.dkr.ecr.us-east-1.amazonaws.com/snapshot/patientservice'
+    ECR_RELEASE = '147997138755.dkr.ecr.us-east-1.amazonaws.com/patientservice'
+    IMAGE_NAME = 'patientservice'
   }
   stages {
     stage('Checkout') { steps { checkout scm } }
-    stage('Install') { steps { sh 'npm ci' } }
-    stage('Lint') { steps { sh 'npm run lint' } }
-    stage('Test') { steps { sh 'npm test' } }
-    stage('Build Docker') {
+    stage('Build') {
       steps {
-        script {
-          dockerImage = docker.build("${IMAGE_NAME}:${env.BUILD_NUMBER}")
+        sh 'npm ci'
+        sh 'npm run build'
+      }
+    }
+    stage('Test-Sonarqube') {
+      steps {
+        withSonarQubeEnv('SonarQube') {
+          sh 'npm run test:coverage'
+          sh 'sonar-scanner -Dsonar.projectKey=patientservice -Dsonar.sources=.'
         }
       }
     }
-    stage('Push Docker') {
+    stage('DockerBuild Snapshot') {
       steps {
         script {
-          docker.withRegistry('', 'docker-hub-credentials') {
-            dockerImage.push()
+          dockerImage = docker.build("${ECR_SNAPSHOT}:${env.BUILD_NUMBER}")
+        }
+      }
+    }
+    stage('Aqua Trivy Scan') {
+      steps {
+        sh 'trivy image --exit-code 1 --severity HIGH,CRITICAL ${ECR_SNAPSHOT}:${env.BUILD_NUMBER} || true'
+      }
+    }
+    stage('Snapshot to Release') {
+      steps {
+        script {
+          sh "docker tag ${ECR_SNAPSHOT}:${env.BUILD_NUMBER} ${ECR_RELEASE}:release"
+          withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-ecr-jenkins']]) {
+            sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin 147997138755.dkr.ecr.us-east-1.amazonaws.com"
+            sh "docker push ${ECR_RELEASE}:release"
           }
         }
       }
