@@ -34,7 +34,7 @@ pipeline {
 
     stage('Push to ECR') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+        withCredentials([usernamePassword(credentialsId: 'aws-dev', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
           sh '''
           aws configure set region ${AWS_REGION}
           ACCOUNT=${ECR_ACCOUNT}
@@ -50,7 +50,7 @@ pipeline {
 
     stage('Deploy to ECS') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+        withCredentials([usernamePassword(credentialsId: 'aws-dev', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
           sh '''
           ACCOUNT=${ECR_ACCOUNT}
           REPO=${ECR_REPO}
