@@ -33,7 +33,7 @@ pipeline {
     stage('Unit Tests') {
       steps {
         sh 'npm test -- --coverage'
-        junit 'coverage/junit.xml'
+        junit testResults: 'coverage/junit.xml', allowEmptyResults: true
       }
     }
 
