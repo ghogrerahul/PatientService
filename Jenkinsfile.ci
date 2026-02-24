@@ -2,7 +2,8 @@ pipeline {
   agent any
   environment {
     SONAR_HOST_URL = 'https://sonarcloud.io'
-    SONAR_PROJECT_KEY = 'patient-service'
+    SONAR_PROJECT_KEY = 'ghogrerahul_PatientService'
+    SONAR_ORGANIZATION = 'ghogrerahul'
   }
 
   stages {
@@ -46,6 +47,7 @@ pipeline {
             -v "$PWD:/usr/src" \
             sonarsource/sonar-scanner-cli:latest \
             -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+            -Dsonar.organization=${SONAR_ORGANIZATION} \
             -Dsonar.sources=src \
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
           '''
